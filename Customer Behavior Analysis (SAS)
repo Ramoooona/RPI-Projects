@@ -1,0 +1,44 @@
+# Import data set
+FILENAME REFFILE "/folders/myfolders/stat_project/sastest.xlsx" TERMSTR=CR;
+PROC IMPORT DATAFILE=REFFILE
+	DBMS=XLSX
+	OUT=WORK.DATA;
+	GETNAMES=YES;
+RUN;
+PROC CONTENTS DATA=WORK.DATA; RUN;
+
+# Lower tail t-test at the 0.05 level of significance
+proc ttest data=WORK.IMPORT
+alpha=0.05
+sides=l;
+var Lifetime_Amt;
+class Gender;
+
+# Upper tail t-test
+proc ttest data=WORK.IMPORT2
+alpha=0.05
+sides=u
+H0=50;
+var Subtotal_per_Visit;
+run;
+
+# Two-tailed t-test at 1% confidence level 
+proc ttest data=WORK.IMPORT1
+alpha=0.01
+sides=2;
+var Ext_Net_Sls_Amt;
+class NR_CAT_at_TOS;
+run;
+
+# Check multicollinearity
+PROC CORR data=WORK.DATA;
+VAR age male lifetimeamt lifetimecount lifetimereturnamt middlewest newmember product transactionseason1;
+RUN;
+
+# Regression
+PROC REG data=WORK.DATA;
+model Spending=TransactionSeason1 TransactionSeason2 TransactionSeason3 
+Age Male Product NewMember
+MiddleWest NorthEast West  
+LifetimeAmt LifetimeReturnAmt LifetimeCount;
+RUN;
