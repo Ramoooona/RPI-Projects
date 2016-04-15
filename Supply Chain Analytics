@@ -1,0 +1,444 @@
+# Name: Yuanmeng Zhang
+# Assignment number: 1
+# Date Created: January 31, 2016
+# Last date updated: February 10, 2016
+# Data files used and locations: C:/RPI/Spring 2016/Supply Chain Analytics/data for HW1_Datagovbldgrexus.csv
+# Course name and Number: Supply Chain Analytics-MGMT 6973
+
+# 2.Reset the workspace
+rm(list=ls())
+
+# 3.Read data
+realestate <- read.csv("C:/RPI/Spring 2016/Supply Chain Analytics/data for HW1_Datagovbldgrexus.csv",stringsAsFactors = FALSE)
+View(realestate)
+
+# 4.Delete the columnn called Historical.Type
+realestate$Historical.Type <- NULL
+
+# 5.Summary of content
+summary(realestate)
+
+# 6.Number of rows and columns
+length(realestate[1,]) #columns
+length(realestate[,1]) #rows
+# 6.my different version
+nrow(realestate)
+ncol(realestate)
+
+# 7.Display the first line of the data frame with the columns...
+realestate<-data.frame(realestate)
+subrealestate <- realestate[1,c(7,5,12,13)]
+subrealestate
+
+# Change the column names and print out the changes
+colnames(realestate)[c(7,5,12,13)] <- c("state","city","sqft","spaces")
+subrealestate2 <- realestate[1,c(7,5,12,13)]
+subrealestate2
+
+# 8.Attach realestate
+attach(realestate)
+
+# 9.Number of unique Region Codes
+length(unique(Region.Code))
+# 9.my different version
+as.data.frame(table(Region.Code))
+
+# 10.Create a vector of unique states
+ust <- as.vector(unique(state))
+ust
+
+# 11.Plot a histogram (2 versions)
+plot(spaces,type="h",main="Parking Space Histogram",xlab="Number of Spots")
+hist(spaces,main="Parking Space Histogram",xlab="Number of Spots")
+
+# 12.Number of buildings per state
+tapply(state,state,FUN=length)
+# 12.my different version
+as.data.frame(table(state))
+
+# 13.Average footage per state
+tapply(sqft,state,mean)
+
+# 14.For loop
+s <- sort(unique(state))
+sq <- rep(0,length(s))
+for (i in 1:length(s)) {
+  sq[i] <- mean(realestate[state==s[i],]$sqft)
+}
+names(sq) <- s
+sq
+
+# 15.Subset
+subset<-subset(realestate,state=='CT'|state=='NY'|state=='NJ'|state=='PA'|state=='DE'|state=='MA')
+subset1 <- subset(subset,sqft>5000|subset$spaces>50)
+subset2 <- subset(subset1,ABA.Accessibility.Flag=="Yes")
+subset2[1:5,]
+
+# 16.Cluster plot
+x <- log10(sqft)
+y <- log10(spaces)
+is.na(x) <- sapply(x, is.infinite)
+is.na(y) <- sapply(y, is.infinite)
+plot(x,y,type="p",main="Square Foot vs Spaces",xlab="Log(Square Foot)",ylab="Log(Spaces)")
+lm <- lm(x~y)
+abline(lm)
+
+# 17.For loop version to assign value to ABA
+for (i in 1:length(ABA.Accessibility.Flag)) {
+   if (ABA.Accessibility.Flag[i]=="Yes") {
+     realestate$ABA[i] <- 1
+    } else {
+      realestate$ABA[i] <- 0
+    }
+}
+# ?17.Assign value to ABA (function version)
+myfunction <- function(i) {
+  if (ABA.Accessibility.Flag=="Yes") {
+    realestate$ABA <- 1
+  } else {
+    realestate$ABA <- 0
+  }
+}
+realestate$ABA <- lapply(realestate$ABA.Accessibility.Flag, FUN=myfunction)
+# 17.my different version
+realestate$ABA <- ifelse(ABA.Accessibility.Flag=="Yes",1,0)
+
+# 18.
+l <- as.vector(sort(unique(realestate[,"Historical.Status"])))
+hscode <- function(L=l,a) {
+  return(match(a,L))
+}
+n <- length(realestate[1,])
+m <- which(colnames(realestate)=="Historical.Status")
+realestate[,n-1] <- rep(0,length(realestate[,1]))
+colnames(realestate)[n-1] <- "HS"
+realestate[,n-1] <- hscode(1,Historical.Status)
+
+
+# Name: Yuanmeng Zhang
+# Assignment number: 3
+# Date Created: March 22, 2016
+# Last date updated: March 28, 2016
+# Data files used and locations: 
+# Course name and Number: Supply Chain Analytics-MGMT 6973
+  
+# 2.Reset the workspace
+rm(list=ls())
+
+# Random sampling
+n1 <- rnorm(1000,12,3) #3
+x1 <- rchisq(1000,4,ncp=0) #4
+e1 <- rexp(1000,rate=2) #5
+
+# Mixture
+# 6.Without loops
+y0 <- n1
+y1 <- x1
+flag <- rbinom(1000,size=1,prob=0.4)
+m1 <- y0*(1-flag)+y1*flag
+
+# 7.Without loops
+y2 <- e1
+flag2 <- rmultinom(1000,size=1,prob=c(.1,.1,.8 ))
+m2 <- y0*flag2[1,]+y1*flag2[2,]+y2*flag2[3,]
+
+# 8.Plot densities
+plot(density(m1),main="Mixture Comparison",xlab="X Variables",ylab="Densities",col="red",ylim=c(0,1))
+lines(density(m2),type="l",col="blue")
+xy<-locator(1)
+legend(xy, legend=c("Two Mix Dist", "Three Mix Dist"), col=c("red", "blue"), lty=c(1,1), lwd=c(2,2))
+
+# 9.Box-Muller
+set.seed(20)
+x<-3+2*sqrt(-2*log(runif(1000)))*cospi(runif(1000))
+set.seed(20)
+x2 <- rnorm(1000,3,2) #Native R function
+plot(sort(x),sort(x2))
+lm <- lm(sort(x)~sort(x2))
+abline(lm)
+lm # They are not the same but close 
+# The radian arctangent between the line and x-axis
+atan(lm(sort(x)~sort(x2))$coefficients[2])*180/pi
+# Almost 45 degree indicates a good fit and these two data sets are from the same family
+
+# 10.shapiro.test
+shapiro.test(x) #p-value=0.6001, normal distribution
+shapiro.test(x2) #p-value=0.626, normal distribution
+# The null-hypothesis is that the population is normally distributed
+
+# 11.Create exponential from the uniform
+set.seed(20)
+z<-runif(1000) 
+expoUnif<--log(z)/1.5
+# Do the same thing with the R function and compare
+set.seed(20)
+xpo<-rexp(1000, rate=1.5)
+# Compare
+plot(sort(expoUnif), sort(xpo), xlim=c(0,1.2), ylim=c(0,1.2))
+abline(lm(sort(expoUnif)~sort(xpo)))
+atan(lm(sort(expoUnif)~sort(xpo))$coefficients[2])*180/pi
+# Since the straight line plotted forms a 45 degree and is through the origin, we can conclude that these two data sets are the same distribution
+
+# 12.Acceptance-rejection method
+N=1000
+y<-runif(N)
+u<-runif(N)
+xc<-NULL
+i<-1000
+while(i){
+  u<-runif(1)
+  y<-runif(1)
+  if (u<=y^4*(1-y)^3/((4/7)^4*(1-4/7)^3)){
+    xc<-c(xc,y)
+    i<-i-1
+  }
+}
+(length(xc))
+plot(density(xc))
+# Do the same with the built in beta distribution
+y<-rbeta(length(xc),shape1=5,shape2=4)
+lines(density(y), col="red")
+
+# 13.Import data
+housing <- read.table("C:/RPI/Spring 2016/Supply Chain Analytics/housing data.txt", quote="\"", comment.char="")
+
+# 14.Rename columns
+names(housing)<-c("CRIM","ZN","INDUS","CHAS","NOX","RM","AGE","DIS","RAD","TAX","PTRATIO","B","LSTAT","MEDV")
+
+# 15.Create a vector
+v1 <- as.vector(housing$MEDV)
+
+# 16.Plot
+plot(density(v1))
+# v1 is a non-symmetrical distribution with multiple modes and a heavy tail, so not normally distributed
+shapiro.test(v1)
+# The extremely small p-value also proves non-normality 
+
+# 17.Basic bootstrap
+B=99999
+barsamp<-rep(0, B) #initializes ysamp
+bara<-median(v1)
+for (i in 1:B){ barsamp[i]<-median(sample(v1, replace=TRUE))}
+bar<-mean(barsamp)
+sdbar<-sd(barsamp)
+bara
+bar
+sdbar
+x<-seq(1/2*B, 1-1/2*B)
+plot(density(barsamp))
+abline(v=bara)
+# The estimated sd is different from actual value
+
+# 18.Parametric bootstrap
+library(MASS)
+n<-length(v1)
+param<-fitdistr(v1, "lognormal") 
+m<-param$estimate[1]
+s<-param$estimate[2]
+B<-9999
+N<-matrix(0,B,n)
+M<-numeric(B)
+M<-rep(0,B)
+for (i in 1:B){
+  N[i,]<-rlnorm(n,meanlog=m,sdlog=s)
+}
+for (i in 1:B){
+  M[i]<-fitdistr(N[i,], "lognormal")$estimate[1]
+}
+mean(M)
+plot(density(M))
+# It samples from the parameters with the MLE for the known distribution
+
+# 19.Drop & add 
+m1 <- housing
+m1$MEDV <- NULL
+m1 <- cbind(CONST=1,m1)
+m1 <- as.matrix(m1)
+
+# 20.Linear regression
+b <- as.vector(solve(t(m1)%*%m1)%*%t(m1)%*%v1)
+
+# 21.Hat matrix
+H<-m1%*%solve(t(m1)%*%m1)%*%t(m1)
+zro<-H%*%H-H
+index1<-abs(zro)>10^(-12)
+(sum(index1))
+
+# 22.Identify matrix
+d<-dim(H)[1]
+d2<-d^2
+I<-matrix(rep(0,d2), byrow=TRUE, nrow=d)
+diag(I)<-rep(1, d)
+IH<-I-H
+zro2<-IH%*%IH-IH
+index2<-abs(zro)>10^(-12)
+sum(index2)
+
+
+# Name: Yuanmeng Zhang
+# Assignment number: 3
+# Date Created: March 22, 2016
+# Last date updated: March 28, 2016
+# Data files used and locations: "C:/RPI/Spring 2016/Supply Chain Analytics/Transportation_Fuels_Production_and_Demand__Beginning_1993.csv" 
+# and "C:/RPI/Spring 2016/Supply Chain Analytics/leadtime.csv"
+# Course name and Number: Supply Chain Analytics-MGMT 6973
+
+# 2.Reset the workspace
+rm(list=ls())
+
+# 3.Import data
+fuel <- read.csv("C:/RPI/Spring 2016/Supply Chain Analytics/Transportation_Fuels_Production_and_Demand__Beginning_1993.csv")
+
+# 4.Change column names
+colnames(fuel)<-c("dte","ecprod","usprod","usdmnd")
+
+# 5.Attach file
+attach(fuel)
+
+# 6.Plot
+plot(as.Date(dte,"%m/%d/%Y"),ecprod,xlab="Time",ylab="East Coast Production",main="Oil Demand:Yuanmeng Zhang",axes=FALSE)
+axis(side=2, at=seq(min(ecprod), max(ecprod),200), labels=TRUE, las=2)
+
+# 7.Subset
+subfuel1 <- subset(fuel, as.Date(dte,"%m/%d/%Y") >= as.Date("01/31/2014","%m/%d/%Y"))
+
+# 8.Test normality
+shapiro.test(subfuel1$usdmnd)
+qqnorm(subfuel1$usdmnd)
+qqline(subfuel1$usdmnd)
+# With an large p-value in Shapiro Test of 0.4934, we cannot reject the null hypothesis and conclude that there is evidence that the data tested (usdmnd) are normally distributed
+# Observing this normal Q-Q Plot, we can conclude the variable is normally distributed with straight line plots, and little departures from the line are also indicative of normality
+
+# 9.Estimate East Coast demand
+subfuel1$ecdmnd <- subfuel1$ecprod * (subfuel1$usdmnd / subfuel1$usprod)
+
+# 10.Test normality
+shapiro.test(subfuel1$ecdmnd)
+# With the p-value = 0.008707, we reject the null hypothesis at 95% significance level and we are 95% confident to conclude that the data tested are not normally distributed
+
+# 11
+mean <- mean(subfuel1$ecdmnd)
+mean
+sd <- sd(subfuel1$ecdmnd)
+sd
+cvp <- (sd/mean)^2
+# With a cv^2 that is less than 0.2 we could use a deterministic EOQ calculation
+
+# 12.Basic bootstrap
+B<-9999
+bs1<-matrix(ncol=109,nrow=B)
+m2<-numeric(0)
+s2<-numeric(0)
+cvp2<-numeric(0)
+for (i in 1:B){
+  bs1[i,]<-sample(subfuel1$ecdmnd, replace=TRUE)
+  m2[i]<-mean(bs1[i,])
+  s2[i]<-sd(bs1[i,])
+  cvp2[i]<-(s2[i]/m2[i])^2
+}
+mean2<-mean(m2)
+sd2<-mean(s2)
+cvp2<-mean(cvp2)
+# The answers are consistent
+
+# 13.EOQ
+q <- sqrt(2*1100*mean*52/0.03)
+q
+
+# 14.Basic bootstrap
+leadtime <- read.csv("C:/RPI/Spring 2016/Supply Chain Analytics/leadtime.csv", sep="")
+date1 <- as.Date(leadtime$leadtime,"%m/%d/%Y")
+date2 <- date1
+n <-length(date1)
+date1[n+1] <- as.Date("1/1/1901", "%m/%d/%Y")
+date2 <- c(as.Date("1/1/1901", "%m/%d/%Y"),date2)
+l <- as.numeric(date1-date2)
+l <- l[2:(length(l)-1)]
+
+# 15.Reorder point
+reorder <- mean(l)/52*mean*52
+reorder
+
+# 16.New EOQ
+q2 <- q*sqrt((1.08+0.03)/1.08)
+q2
+
+
+# Name: Yuanmeng Zhang
+# Assignment number: 4
+# Date Created: March 30, 2016
+# Last date updated: April 11, 2016
+# Data files used and locations: "C:/Users/Ramona/Google Drive/RPI/Spring 2016/Supply Chain Analytics/WidgetSales.csv"
+# and "C:/Users/Ramona/Google Drive/RPI/Spring 2016/Supply Chain Analytics/VacaDmnd.csv"
+# Course name and Number: Supply Chain Analytics-MGMT 6973
+
+# 2
+rm(list=ls())
+
+# 3
+sales <- read.csv("C:/Users/Ramona/Google Drive/RPI/Spring 2016/Supply Chain Analytics/WidgetSales.csv")
+
+# 4
+subsales <- sales[sales$wid_col=="blue",]
+table(subsales)
+
+# 5
+prop.table(table(subsales))
+cumsum(prop.table(table(sales[sales$wid_col=="blue",])))
+
+# 6
+cu <- 5.5-3
+co <- 3-0.9
+p <- cu/(cu+co)
+p
+# Since p=0.5435 > 0.3995 and < 0.7902, which are the cumulative probabilities of 350 and 400 blude widgets respectively, so I should buy 400 blue widgets
+
+# 7
+demand <- read.csv("C:/Users/Ramona/Google Drive/RPI/Spring 2016/Supply Chain Analytics/VacaDmnd.csv")
+
+# 8
+plot(density(demand$demand),main="Vacation Demand - Yuanmeng Zhang",xlab="Units", ylab="Frequency")
+# This density curve plotted is asymmetric and right skewed with long tails to the right.The mean is on the right closer to the tail of the distribution. The median is located at the center of the data.
+
+# 9
+library(MASS)
+VD<-fitdistr(demand$demand, "lognormal")
+meanlog<-VD$estimate[1]
+sdlog<-VD$estimate[2]
+
+# 10
+Co <- 120
+Cu <- 120+20+10-120
+p2 <- Cu/(Cu+Co)
+ceiling(qlnorm(p2,meanlog,sdlog))
+
+# 11
+library(MASS)
+VD2<-fitdistr(demand$demand, "normal")
+meanlog2<-VD2$estimate[1]
+sdlog2<-VD2$estimate[2]
+ceiling(qnorm(p2,meanlog2,sdlog2))
+
+# 12
+# The room is overbooked if we book 262 rather than 261 as a result of mistakenly using the normal distribution, the cost is thus $120
+
+# 13
+mean <- mean(demand$demand)
+sd <- sd(demand$demand)
+EOQ <- sqrt(2*180*mean*12/5)
+
+# 14
+ad <- 12*mean(demand$demand)
+asd <- sqrt(12)*sd(demand$demand)
+slm1 <- 0.85
+z <- EOQ * (1-slm1)/asd
+ln1 <- function(y) {dlnorm(y)-y*(1-plnorm(y))}
+nlinv <- function(y) uniroot(function(x) ln1(x) - y,interval = c(-4,4))$root
+r1 <- nlinv(z)*asd+ad
+r1
+slm2 <- 0.95
+t <- EOQ*(1-slm2)/asd
+r2 <- nlinv(t)*asd+ad
+r2
+# The reorder point is 3930 at SLM = 85%
+# The reorder point is 3995 at SLM = 95%
